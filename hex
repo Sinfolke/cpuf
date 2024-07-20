@@ -28,18 +28,19 @@ long long to_decimal(std::string hex) {
         char& c = hex[i];
         // A-F may be represented with any capslock
         c = tolower(c);
-        if (c >= '0' && c <= '9')
+        if (c >= '0' && c <= '9') {
             /*
                 With ASCII encoding the numbers
                 are represented from 48 up to 57.
                 substd::string the 'c' and '0' would produce the needed number
             */
             resultnum += (c - '0') * (1LL << (4 * (size - i)));
-        else if (c >= 'a' && c <= 'f')
+        } else if (c >= 'a' && c <= 'f') {
             // similar as above
             resultnum += (10 + c - 'a') * (1LL << (4 * (size - i)));
-        else
+        } else {
             throw std::invalid_argument("Unknown hex character '" + std::string(1, c) + "'");
+        }
     }
     return resultnum;
 }

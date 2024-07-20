@@ -4,6 +4,7 @@
         "constexpr_math": "cpp",
         "color": "cpp",
         "constexpr_str": "cpp",
+        "constexpr": "cpp",
         "cstring": "cpp",
         "algorithm": "cpp",
         "array": "cpp",
@@ -69,6 +70,12 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xtree": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "iomanip": "cpp",
+        "sstream": "cpp",
+        "chrono": "cpp",
+        "ratio": "cpp",
+        "functional": "cpp",
+        "worktime": "c"
     }
 }

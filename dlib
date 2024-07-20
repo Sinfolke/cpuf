@@ -11,7 +11,7 @@
 # endif
 namespace std {
     /**
-     * @brief The default flag for the dlib class when the program is compiled for unix systems. 
+     * @brief The default flag for the dlib class when the program is compiled for unix systems. On Windows all interaction ignored.
      *        Default state is RTLD_LAZY
      */
     int dlibDefFlag = 0; 
@@ -55,7 +55,7 @@ class dlib {
     dlib(const char* path) {
         loadlib(path);
     }
-    dlib(const std::string& path) {
+    dlib(const std::string path) {
         loadlib(path);
     }
     dlib() {}
@@ -81,7 +81,7 @@ class dlib {
      * The extension is added based on the platform an app is compiled for.
      * You may disable automatic extension by defining CPUF_DLIB_NO_EXTENSION
      */
-    inline void loadlib(const std::string& path) {
+    inline void loadlib(const std::string path) {
         if (handler) free();
 #   ifdef _WIN32
         handler = LoadLibraryA(path.c_str());
@@ -182,7 +182,7 @@ class dlib {
      * @return returns it's pointer that you can use to call within your code
      */
     template<typename ReturnT, typename... Params>
-    inline ReturnT(*loadfun(const char* name)const)(Params...) {
+    inline ReturnT(*loadfun(const char* name))(Params...) {
         auto p = reinterpret_cast<ReturnT(*)(Params...)>(
 #ifdef _WIN32
             GetProcAddress(handler, name)
@@ -192,14 +192,15 @@ class dlib {
         );
         if (p == nullptr) {
             free();
-            name.insert(0, "cannot load function '");
-            name += "'";
-            throw std::dlib_exception(name, std::dlib_exception::Kind::loadfun);
+            std::string n = "cannot load function '";
+            n += name;
+            n+= "'";
+            throw std::dlib_exception(n, std::dlib_exception::Kind::loadfun);
         }
         return p;
     }
     template<typename ReturnT, typename... Params>
-    inline ReturnT(*loadfun(std::string name)const)(Params...) {
+    inline ReturnT(*loadfun(std::string name))(Params...) {
         auto p = reinterpret_cast<ReturnT(*)(Params...)>(
 #ifdef _WIN32
             GetProcAddress(handler, name.c_str())

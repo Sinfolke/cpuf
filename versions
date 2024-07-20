@@ -1,0 +1,35 @@
+// header to have versions information
+
+#ifndef __cplusplus
+#error "cpuf/versions is C++ header"
+#endif
+
+#if __cplusplus >= 201103L
+#define CXX11 1
+#else
+#define CXX11 0
+#endif
+
+#if __cplusplus >= 201402L
+#define CXX14 1
+#else
+#define CXX14 0
+#endif
+
+#if __cplusplus >= 201703L
+#define CXX17 1
+#else
+#define CXX17 0
+#endif
+
+#if __cplusplus >= 202002L
+#define CXX20 1
+#else
+#define CXX20 0
+#endif
+
+#if __cplusplus >= 202302L
+#define CXX23 1
+#else
+#define CXX23 0
+#endif

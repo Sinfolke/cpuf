@@ -1,14 +1,10 @@
 #pragma once
-// #ifdef CPUF
-// #error  "CPUF sucks. This library refuses to work until you use CPUF"
-// #endif
 #ifndef CPUF_COLOR
 #define CPUF_COLOR
-
-
 #ifndef __cplusplus
-#pragma message("This header is for C++ only")
-#else
+#error "cpuf/color is C++ header"
+#endif
+#define _CRT_SECURE_NO_WARNINGS
 #include <memory>
 #include <cstring>
 #include <cstdlib>
@@ -16,14 +12,14 @@
 #include <sstream>
 #include <iomanip>
 /**
- * @brief ASCII color constants for console. Also supports RBG and HTML colors.
+ * @brief ASCII color constants for console. Also supports RBG and HEX colors.
  * By default there are in scope foreiground constants, means they will change text color.
  * the color::bg namespace defines constants to change the background.
- * The 'rgb' function let you get an RGB color constant and 'he'x converts the color to RGB and returns RBG().
+ * The 'rgb' function let you get an RGB color and hex converts the color to RGB and returns RBG().
  * inline int rgb(const unsigned char R, const unsigned char G, const unsigned char B);
  * inline int hex(const char* c);
- *  invalid_argument_exception: non hexadicimal character (except if first character is '#')
- *  out_of_range: the color has either has 0 or over 6 digits
+ *  invalid_argument_exception: non hexadicimal character (begin with '#' considered hexadecimal character)
+ *  out_of_range: the color either has 0 or over 6 digits
  * @file color
 */
 namespace color {
@@ -45,7 +41,7 @@ namespace color {
                         s += ')';
             return s;
         }
-        static RGB from_hex(char* hex) {
+        static RGB from_hex(const char* hex) {
             if (hex[0] == '#') hex++; // Skip the '#' character
             std::istringstream iss(hex);
             int hexValue;
@@ -61,6 +57,9 @@ namespace color {
         static inline RGB from_hex(const std::string hex) {
             return from_hex(hex.c_str());
         }
+        std::string to_hex() {
+            return to_hex(R, G, B);
+        }
         static std::string to_hex(const RGB _rgb) {
             std::stringstream ss;
             ss << "#" << std::hex << std::uppercase << std::setfill('0')
@@ -71,6 +70,9 @@ namespace color {
         }
         static inline std::string to_hex(unsigned char R, unsigned char G, unsigned char B) {
             return to_hex(RGB {R, G, B});
+        }
+        operator std::string() {
+            return to_hex();
         }
     };
     /** @brief Resets both foreiground and background to it's default state */
@@ -153,7 +155,8 @@ ADD_COLOR_BRIGHT(bright_blue, 4);
 ADD_COLOR_BRIGHT(bright_magenta, 5);
 ADD_COLOR_BRIGHT(bright_cyan, 6);
 ADD_COLOR_BRIGHT(bright_white, 7);
-
-
-#endif // __cplusplus
+#undef ADD_COLOR
+#undef ADD_COLOR_CST
+#undef ADD_COLOR_BRIGHT
+#undef _CRT_SECURE_NO_WARNINGS
 #endif // CPUF_COLOR
