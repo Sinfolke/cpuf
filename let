@@ -4,6 +4,7 @@
 #define CPUF_LET
 #include "versions"
 #include "color"
+#include <iostream>
 
 #if !CXX11
 #error "cpuf/let requires cxx11"
@@ -1496,38 +1497,6 @@ public:
     }
 };
 namespace std {
-    // template <class _Elem, class _Traits>
-    // basic_istream<_Elem, _Traits>& getline(
-    //     basic_istream<_Elem, _Traits>&& _Istr, let& _Obj) {
-    //     // get characters into string, discard newline
-    //     auto& _Str = _Obj.ref().str;
-    //     if (_Obj.type() == Type::String) {
-    //         _Str.erase();
-    //     } else {
-    //         _Obj = "";
-    //     }
-    //     std::getline(std::move(_Istr), _Str, _Istr.widen('\n'));
-    //     if (_Str == "true") {
-    //         _Obj = true;
-    //     } else if (_Str == "false") {
-    //         _Obj = false;
-    //     } else {
-    //         // try to convert into int
-    //         long long num;
-    //         auto ec = std::from_chars(_Str.data(), _Str.data() + _Str.size(), num).ec;
-    //         if (ec == std::errc()) {
-    //             _Obj = num;
-    //         } else {
-    //             // try to convert into double
-    //             long double db;
-    //             ec = std::from_chars(_Str.data(), _Str.data() + _Str.size(), db).ec;
-    //             if (ec == std::errc()) {
-    //                 // convertion success, assign the double
-    //                 _Obj = db;
-    //             }
-    //         }
-    //     }
-    // }
 
     template <class _Elem, class _Traits>
     basic_istream<_Elem, _Traits>& getline(
@@ -1546,15 +1515,20 @@ namespace std {
             _Obj = false;
         } else {
             // try to convert into int
+#if CXX17
             long long num;
             auto ec = std::from_chars(_Str.data(), _Str.data() + _Str.size(), num).ec;
             if (ec == std::errc()) {
                 _Obj = num;
             } else {
+#else
+            try {
+            _Obj = stoi(_Str.c_str());
+            } catch (...) {
+#endif
                 // try to convert into double
                 long double db;
-                ec = std::from_chars(_Str.data(), _Str.data() + _Str.size(), db).ec;
-                if (ec == std::errc()) {
+                if (std::istringstream(_Str) >> db) {
                     // convertion success, assign the double
                     _Obj = db;
                 }
@@ -1581,10 +1555,16 @@ namespace std {
         } else {
             // try to convert into int
             long long num;
+#if CXX17
             auto ec = std::from_chars(_Str.data(), _Str.data() + _Str.size(), num).ec;
             if (ec == std::errc()) {
                 _Obj = num;
             } else {
+#else
+            try {
+            num = stoi(_Str.c_str());
+            } catch (...) {
+#endif
                 // try to convert into double
                 long double db;
                 if (std::istringstream(_Str) >> db) {
