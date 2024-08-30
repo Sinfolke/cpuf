@@ -4,7 +4,15 @@
 #ifndef __cplusplus
 #error "cpuf/color is C++ header"
 #endif
-#define _CRT_SECURE_NO_WARNINGS
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+
 #include <memory>
 #include <cstring>
 #include <cstdlib>
@@ -80,10 +88,9 @@ namespace color {
     static inline std::string __rgb(const RGB& _rgb, const int& _ground) {
         // max value: "\033[38;2;255;255;255m"
         // max len: 20
-        char* p = (char*) std::malloc(20);
+        char p[20];
         std::sprintf(p, "\033[%d;2;%hhu;%hhu;%hhum", _ground, _rgb.R, _rgb.G, _rgb.B);
         std::string s = p;
-        free(p);
         return s;
     }
     inline std::string rgb(const RGB& _rgb) {
@@ -159,4 +166,11 @@ ADD_COLOR_BRIGHT(bright_white, 7);
 #undef ADD_COLOR_CST
 #undef ADD_COLOR_BRIGHT
 #undef _CRT_SECURE_NO_WARNINGS
+#include <crtdefs.h>
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
 #endif // CPUF_COLOR

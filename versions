@@ -10,32 +10,32 @@
 #undef CXX20
 #undef CXX23
 
-#if (defined(_MSC_VER) && _MSC_VER >= 1700) || __cplusplus >= 201103L
+#if (defined(_MSC_VER) && _MSVC_LANG >= 201402L) || __cplusplus >= 201103L
 #define CXX11 1
 #else 
 #define CXX11 0
 #endif
 
-#if (defined(_MSC_VER) && _MSC_VER >= 1900) || __cplusplus >= 201402L
+#if (defined(_MSC_VER) && _MSVC_LANG >= 201402L) || __cplusplus >= 201402L
 #define CXX14 1
 #else 
 #define CXX14 0
 #endif
 
-#if (defined(_MSC_VER) && _MSC_VER >= 1910) || __cplusplus >= 201703L
+#if (defined(_MSC_VER) && _MSVC_LANG >=201703L) || __cplusplus >= 201703L
 #define CXX17 1
 #else 
 #define CXX17 0
 #endif
 
-#if (defined(_MSC_VER) && _MSC_VER >= 1920) || __cplusplus >= 202002L
+#if (defined(_MSC_VER) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L
 #define CXX20 1
 #else 
 #define CXX20 0
 #endif
 
 
-#if (defined(_MSC_VER) && _MSC_VER >= 1930) || __cplusplus >= 202302L
+#if __cplusplus >= 202302L
 #define CXX23 1
 #else
 #define CXX23 0

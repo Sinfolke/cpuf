@@ -15,7 +15,6 @@ struct TEST_TIME_PROP {
     std::size_t count = 0;
     bool output = true;
     int it = 10000;
-
 };
 // Define a struct for returning test time results
 struct TEST_TIME {
@@ -124,6 +123,7 @@ struct TEST_TIME {
         }
     };
     static void outTimeDifference(TEST_TIME result1, TEST_TIME result2) {
+        std::cout << "PRINTING: " << std::endl;
         auto r1_meangful = result1.getLowestMeangful();
         auto r1_meangful2 = result1.getMoreLowestMeangful();
         auto r2_meangful = result2.getLowestMeangful();
