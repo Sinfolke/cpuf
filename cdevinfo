@@ -78,9 +78,9 @@ namespace devinfo {
                 msvc_id = 3;
 
     constexpr int                       // os kinds
-                apple = 1, 
-                linux = 2, 
-                windows = 3;
+                Apple = 1, 
+                Linux = 2, 
+                Windows = 3;
 
     constexpr int                       // lang kinds
                 Cpp = 1,
@@ -94,11 +94,11 @@ namespace devinfo {
         constexpr const char* ARCH_STR = "amd64";
         constexpr double ARCH_BYTESIZE = 8;
         #if defined(__GNUC__)
-            static const int& __cpuf_devinfo_amd64_ver__() {    // 3if
-                if      (__builtin_cpu_supports("x86-64-v4"))   return 4;
-                else if (__builtin_cpu_supports("x86-64-v3"))   return 3;
-                else if (__builtin_cpu_supports("x86-64-v2"))   return 2;
-                                                                return 1;
+            static const int __cpuf_devinfo_amd64_ver__() {
+                if (__builtin_cpu_supports("x86-64-v4"))   return 4;
+                if (__builtin_cpu_supports("x86-64-v3"))   return 3;
+                if (__builtin_cpu_supports("x86-64-v2"))   return 2;
+                                                            return 1;
             }
             /**
              * @brief Define the version number of AMD64 architecture in runtime
@@ -111,7 +111,7 @@ namespace devinfo {
              * Possible values: "x86-64-v1", "x86-64-v2", "x86-64-v3", "x86-64-v4"
              * Note: it is assigned unknown on non-gnu compiler
             */
-            const char* AMD64_VER_STR = AMD64_VER == 3 ? "x86-64-v3" : AMD64_VER == 2 ? "x86-64-v2" : AMD64_VER == 4 ? "x86-64-v4" : "x86-64-v1"; // 3 if
+            const char* AMD64_VER_STR = AMD64_VER == 3 ? "x86-64-v3" : AMD64_VER == 2 ? "x86-64-v2" : AMD64_VER == 4 ? "x86-64-v4" : "x86-64-v1";
         #else
             /**
              * @brief Define the version number of AMD64 architecture in runtime
@@ -129,19 +129,11 @@ namespace devinfo {
         #endif
         #define __DEFINED_ARCHITECTURE__ 
     #endif
-
+constexpr const char* LANG_STR = "C++";
+constexpr int LANG = 1;
 #ifdef CPUF_DEVINFO_C
     // since the devinfo.h is included we can use those macros
-
-
-    constexpr int 
-# ifdef DEVINFO_CPP
-        /** @brief The current language id. C = 0, C++ = 1 */
-        LANG = 1,
-# else
-        /* The current language id. C = 0, C++ = 1 */
-        LANG = 0,
-# endif
+    constexpr int
         COMPILER = DEVINFO_COMPILER,
         ARCH_BITSIZE = DEVINFO_ARCH_BITSIZE,
         OS = DEVINFO_OS,
@@ -158,12 +150,11 @@ namespace devinfo {
                         ARCH = DEVINFO_ARCH,
                         ARCH_KIND = DEVINFO_ARCH_KIND;
         constexpr int 
-                        ARCH_BYTESIZE = DEVINFO_ARCH_BYTESIZE,
+                        ARCH_BYTESIZE = DEVINFO_ARCH_BYTESIZE;
     #endif
 #else
     #ifdef __cplusplus
-        constexpr const char* LANG_STR = "C++";
-        constexpr int LANG = 1;
+
     #else
         constexpr const char* LANG_STR = "C";
         constexpr int LANG = 0;
@@ -373,7 +364,7 @@ namespace devinfo {
             constexpr const char* ARCH_STR = "armv8.6A";
             constexpr double ARCH_BYTESIZE = 8;
         #else
-        #   pragma message("We've defined the architecture is ARM but exact version is not defined")
+        #   pragma message("Undefine exact version of arm")
             constexpr double ARCH = arm;
             constexpr const char* ARCH_STR = "arm";
             constexpr double ARCH_BYTESIZE = undefined_id;
@@ -479,44 +470,36 @@ namespace devinfo {
     # endif
 
     # if defined(__APPLE__)
-        constexpr int OS = apple;
+        constexpr int OS = Apple;
         constexpr const char* OS_STR = "apple";
-        #if defined(__LP64__) && __LP64__
-            constexpr int OS_BYTESIZE = 8;
-        #else
-            constexpr int OS_BYTESIZE = 4;
-        #endif
     # elif defined(__linux__)
-        constexpr int OS = linux;
+        constexpr int OS = Linux;
         constexpr const char* OS_STR = "linux";
-        #if defined(__LP64__) || defined(_LP64)
-            constexpr int OS_BYTESIZE = 8;
-        #else
-            constexpr int OS_BYTESIZE = 4;
-        #endif
     # elif defined(__FreeBSD__)
-        constexpr int OS = freebsd;
+        constexpr int OS = Freebsd;
         constexpr const char* OS_STR = "freebsd";
-        #if defined(__LP64__)
-            constexpr int OS_BYTESIZE = 8;
-        #else
-            constexpr int OS_BYTESIZE = 4;
-        #endif
     # elif defined(_WIN32)
-        constexpr int OS = windows;
+        constexpr int OS = Windows;
         constexpr const char* OS_STR = "windows";
-        #if defined(_WIN64)
-            constexpr int OS_BYTESIZE = 8;
-        #else
-            constexpr int OS_BYTESIZE = 4;
-        #endif
     # else
     #   pragma message("Undefined platform. The platforms it able to determine are: Linux, FreeBSD, MacOS and Windows")
     #   define ___UNDEFINED_OS___
         constexpr int OS = undefined_id;
         constexpr char* OS_STR = "undefined";
     # endif
-
+    #ifdef _WIN32
+    #   ifdef _WIN64
+            constexpr int OS_BYTESIZE = 8;
+    #   else
+            constexpr int OS_BYTESIZE = 4;
+    #   endif
+    #else
+    #   ifdef __LP64__
+                constexpr int OS_BYTESIZE = 8;
+    #   else
+                constexpr int OS_BYTESIZE = 4;
+    #   endif
+    #endif
     # ifndef ___UNDEFINED_ARCHITECTURE___
         /**
          * @brief the highest amount of bits the architecture does support. Varying between 32 and 64 bits. Equals ARCH_BYTESIZE * 8
@@ -536,7 +519,7 @@ namespace devinfo {
         */
         constexpr int OS_BITSIZE = OS_BYTESIZE * 8;
     # else
-    #   undef ___UNDEFINED_ARCHITECTURE___
+    #   undef ___UNDEFINED_OS___
         /**
          * @brief the highest amount of bits OS does support. Varying between 32 and 64 bits. Equals ARCH_BYTESIZE * 8
         */

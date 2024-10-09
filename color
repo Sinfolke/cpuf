@@ -166,7 +166,6 @@ ADD_COLOR_BRIGHT(bright_white, 7);
 #undef ADD_COLOR_CST
 #undef ADD_COLOR_BRIGHT
 #undef _CRT_SECURE_NO_WARNINGS
-#include <crtdefs.h>
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
 #elif defined(_MSC_VER)

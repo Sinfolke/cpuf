@@ -14,7 +14,7 @@ namespace std {
      * @brief The default flag for the dlib class when the program is compiled for unix systems. On Windows all interaction ignored.
      *        Default state is RTLD_LAZY
      */
-    int dlibDefFlag = 0; 
+    int dlibDefFlags = 0; 
     class dlib_exception : public std::exception {
     public:
         enum class Kind {
@@ -271,7 +271,7 @@ class dlib {
         HMODULE handler = nullptr;
 #else
         void* handler = nullptr;
-        int f = std::dlibDefFlag;
+        int f = std::dlibDefFlags;
 #endif
 };
 
