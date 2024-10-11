@@ -1,0 +1,287 @@
+#include <string>
+#include <cstdarg>
+#include <charconv>
+#include <iostream>
+#include <iomanip>
+#include <functional>
+#include <vector>
+//#include <regex>
+static const char* _ioconfig_laststart = NULL;
+//std::vector<const char*> errbuf = {};
+namespace ioconfig {
+    // standard configurations
+    const char
+        *_char = "c|hhd",
+        *_uchar = "hhu",
+        *_short = "hd",
+        *_ushort = "hu",
+        *_int = "d|i",
+        *_uint = "u",
+        *_long = "ld|li",
+        *_ulong = "lu",
+        *_llong = "lld|lli",
+        *_ullong = "llu|zu"
+    ;
+    const char 
+        *_char_hex = "hhx",
+        *_char_hex_big = "hhX",
+        *_short_hex = "hx",
+        *_short_hex_big = "hX",
+        *_int_hex = "x",
+        *_int_hex_big = "X",
+        *_long_hex = "lx",
+        *_long_hex_big = "lX",
+        *_llong_hexx = "hhx",
+        *_llong_hex_big = "hhX"
+    ;
+    const char* str = "s";
+    // using event_handler = std::function<void(std::smatch&)>;
+    // static std::unordered_map<std::string, event_handler> handlers {}; 
+    // void add(std::string fmt, event_handler event) {
+    //     if (fmt[0] != '^')
+    //         fmt.insert(0, "^");
+    //     handlers[fmt] = event;
+    // }
+    // void rm(std::string fmt) {
+    //     if (fmt[0] != '^')
+    //         fmt.insert(0, '^');
+    //     handlers.erase(fmt);
+    // }
+    // evaluate the simple conditional configuration
+    int eval_simple(const char* conf, const char* input) {
+        if (conf[1] == '\0') {
+            // handle single character
+            return (conf[0] == input[0]);
+        }
+        int equal = 1;
+        const char* p = conf;
+        _ioconfig_laststart = p;
+        for (; *p != '\0'; p++, input++) {
+            if (*p == '|') {
+                if (equal)
+                    return p - _ioconfig_laststart;
+                // reset
+                equal = 1;
+                _ioconfig_laststart = p + 1;
+                continue;
+            }
+            if (*p != *input)
+                equal = 0;
+            
+        }
+        if (equal)
+            return p - _ioconfig_laststart;
+        return 0;
+    }
+    // std::tuple<int, std::smatch> eval_complex(std::string conf, const char* input) {
+    //     try {
+    //         static std::regex pattern(conf);  // Static to reuse the compiled pattern
+    //         std::smatch result;
+    //         if (std::regex_search(input, result, pattern))
+    //             return std::make_tuple(1, result);
+    //     } catch (const std::regex_error& e) {
+    //         // Handle or log the error
+    //         std::cerr << "<Regex error: " << e.what() << '>';
+    //     }
+    //     return std::make_tuple(0, std::smatch());
+    // }
+};
+// Base case for the case when only one argument is left
+static void print_nth(int index) {
+    std::cout << "<none>";
+}
+template<typename T, typename ...Args>
+static void print_nth(int index, T first, Args&&... args) {
+    if (index == 0) {
+        std::cout << first;
+    } else {
+        print_nth(index - 1, args...);
+    }
+}
+
+// General case for when there are more than one argument
+template<typename Actual>
+static void print_ntht(int index) {
+    std::cout << "<none>";
+}
+// Primary template for variadic arguments
+template<typename Actual, typename T, typename... Args>
+static void print_ntht(int index, T first, Args... rest) {
+    if (index == 0) {
+        std::cout << reinterpret_cast<Actual&>(first);
+    } else {
+        print_ntht<Actual>(index - 1, rest...);
+    }
+}
+static long long convert_to_num(const char* start, char* end) {
+    long long id = std::strtoll(start, &end, 10);
+    #ifdef CPUF_NON_ZERO_COUNT
+        id++;
+    #endif
+    return id;
+}
+template<typename... Args>
+static int out_list(int id, const char* start, int iterator, int* printed, Args... args) {
+    char* end;
+    *printed = convert_to_num(start, end);
+
+    for (int i = 0; i < *printed; i ++) {
+        print_nth(id + (i * iterator), args...);
+    }
+
+    return end - start;
+}
+
+template<typename... Args>
+static int out_woffset(int id, const char* start, int sign, int* printed, Args... args) {
+    char* end;
+    *printed = convert_to_num(start, end);
+
+    print_nth(id + (*printed * sign), args...);
+
+    return end - start;
+}
+
+
+#define TRY(var)     if ((len = ioconfig::eval_simple(ioconfig::var, format)) != 0)
+#define TRY_EVAL(var)     else TRY(var)
+#define printt(type) print_ntht<type>(id, args...); *printed++
+#define print print_nth(id, args...); *printed++
+#define PRINT_HEX(type) \
+    std::cout << std::setw(sizeof(type)) << std::setfill('0') << std::hex; \
+    printt(type)
+#define PRINT_HEX_UPPER(type) \
+    std::cout << std::setw(sizeof(type)) << std::setfill('0') << std::hex; \
+    printt(type); \
+    std::cout << std::nouppercase
+template<typename ...Args>
+int cpuf_internal_print_fmt(int id, const char* format, int* printed, Args&&... args) {
+    int len;
+    TRY(_char) {
+        printt(char);
+    }
+    TRY_EVAL(_uchar) {
+        printt(unsigned char);
+    }
+    TRY_EVAL(_short) {
+        printt(short);
+    }
+    TRY_EVAL(_ushort) {
+        printt(unsigned short);
+    }
+    TRY_EVAL(_int) {
+        printt(int);
+    }
+    TRY_EVAL(_uint) {
+        printt(unsigned int);
+    }
+    TRY_EVAL(_long) {
+        printt(long);
+    }
+    TRY_EVAL(_ulong) {
+        printt(unsigned long);
+    }
+    TRY_EVAL(_llong) {
+        printt(long long);
+    }
+    TRY_EVAL(_ullong) {
+        printt(unsigned long long);
+    }
+
+    // For hexadecimal types
+    TRY_EVAL(_char_hex) {
+        PRINT_HEX(char);
+    }
+    TRY_EVAL(_char_hex_big) {
+        PRINT_HEX_UPPER(char);
+    }
+    TRY_EVAL(_short_hex) {
+        PRINT_HEX(short);
+    }
+    TRY_EVAL(_short_hex_big) {
+        PRINT_HEX_UPPER(short);
+    }
+    TRY_EVAL(_int_hex) {
+        PRINT_HEX(int);
+    }
+    TRY_EVAL(_int_hex_big) {
+        PRINT_HEX_UPPER(int);
+    }
+    TRY_EVAL(_long_hex) {
+        PRINT_HEX(long);
+    }
+    TRY_EVAL(_long_hex_big) {
+        PRINT_HEX_UPPER(long);
+    }
+    TRY_EVAL(_llong_hexx) {
+        PRINT_HEX(long long);
+    }
+    TRY_EVAL(_llong_hex_big) {
+        PRINT_HEX_UPPER(long long);
+    }
+    TRY_EVAL(str) {
+        // string
+        print;
+    } else if (isdigit(*format)) {
+        char* end;
+        long long id = convert_to_num(format, end);
+        print;
+        len = end - format;
+    } else if (*format == '$') {
+        // output any type
+        len = 1;
+        *printed = 1;
+        print;
+    } else if (*format == '+') {
+        len = (*++format == '+') ?
+            out_list(id, format, 1, printed) : out_woffset(id, format, 1, printed);
+    } else if (*format == '-') {
+        len = (*++format == '-') ?
+            out_list(id, format, -1, printed) : out_woffset(id, format, -1, printed);
+    } else {
+        return 0; // would output format
+    }
+    return len;
+}
+#undef TRY
+#undef TRY_EVAL
+#undef PRINT_HEX
+#undef PRINT_HEX_UPPER 
+
+template<typename ...Args>
+int cpuf_printf(const char* format,Args&&... args) {
+    int id = 0;
+    const char* start = format;
+    while (*format != '\0') {
+        if (*format == '%') {
+            format++;
+            if (*format != '%') {
+                int printed;
+                format += cpuf_internal_print_fmt(id, format, &printed, args...);
+                id += printed;
+                continue;
+            }
+        }
+        std::cout << *format++;
+    }
+    return format - start;
+}
+
+template<typename ...Args>
+int cpuf_printf(std::string format, Args&&... args) {
+    int id = 0;
+    int i = 0;
+    for (; i < format.size(); ) {
+        if (format[i] == '%') {
+            i++;
+            if (format[i] != '%') {
+                int printed;
+                i += cpuf_internal_print_fmt(id, format.data(), &printed, args...);
+                id += printed;
+                continue;
+            }
+        }
+        std::cout << format[i++];
+    }
+    return i;
+}
