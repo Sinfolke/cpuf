@@ -87,30 +87,30 @@ namespace ioconfig {
     // }
 };
 // Base case for the case when only one argument is left
-static void print_nth(int index) {
-    std::cout << "<none>";
+static void print_nth(std::stringstream& buf, int index) {
+    buf << "<none>";
 }
 template<typename T, typename ...Args>
-static void print_nth(int index, T first, Args&&... args) {
+static void print_nth(std::stringstream& buf, int index, T first, Args&&... args) {
     if (index == 0) {
-        std::cout << first;
+        buf << first;
     } else {
-        print_nth(index - 1, args...);
+        print_nth(buf, index - 1, args...);
     }
 }
 
 // General case for when there are more than one argument
 template<typename Actual>
-static void print_ntht(int index) {
-    std::cout << "<none>";
+static void print_ntht(std::stringstream& buf, int index) {
+    buf << "<none>";
 }
 // Primary template for variadic arguments
 template<typename Actual, typename T, typename... Args>
-static void print_ntht(int index, T first, Args... rest) {
+static void print_ntht(std::stringstream& buf, int index, T first, Args... rest) {
     if (index == 0) {
-        std::cout << reinterpret_cast<Actual&>(first);
+        buf << reinterpret_cast<Actual&>(first);
     } else {
-        print_ntht<Actual>(index - 1, rest...);
+        print_ntht<Actual>(buf, index - 1, rest...);
     }
 }
 static long long convert_to_num(const char* start, char* end) {
@@ -121,42 +121,49 @@ static long long convert_to_num(const char* start, char* end) {
     return id;
 }
 template<typename... Args>
-static int out_list(int id, const char* start, int iterator, int* printed, Args... args) {
+static int out_list(std::stringstream& buf, int id, const char* start, int iterator, int* printed, Args... args) {
     char* end;
     *printed = convert_to_num(start, end);
 
     for (int i = 0; i < *printed; i ++) {
-        print_nth(id + (i * iterator), args...);
+        print_nth(buf, id + (i * iterator), args...);
     }
 
     return end - start;
 }
 
 template<typename... Args>
-static int out_woffset(int id, const char* start, int sign, int* printed, Args... args) {
+static int out_woffset(std::stringstream& buf, int id, const char* start, int sign, int* printed, Args... args) {
     char* end;
     *printed = convert_to_num(start, end);
 
-    print_nth(id + (*printed * sign), args...);
+    print_nth(buf, id + (*printed * sign), args...);
 
     return end - start;
 }
-
-
-#define TRY(var)     if ((len = ioconfig::eval_simple(ioconfig::var, format)) != 0)
-#define TRY_EVAL(var)     else TRY(var)
-#define printt(type) print_ntht<type>(id, args...); *printed++
-#define print print_nth(id, args...); *printed++
+// Macros to simplify the `cpuf_internal_print_fmt` implementation
+#define TRY(var) if ((len = ioconfig::eval_simple(ioconfig::var, format)) != 0)
+#define TRY_EVAL(var) else TRY(var)
+#define printt(type) print_ntht<type>(buf, id, args...); (*printed)++
+#define print print_nth(buf, id, args...); (*printed)++
 #define PRINT_HEX(type) \
-    std::cout << std::setw(sizeof(type)) << std::setfill('0') << std::hex; \
-    printt(type)
-#define PRINT_HEX_UPPER(type) \
-    std::cout << std::setw(sizeof(type)) << std::setfill('0') << std::hex; \
+    buf << std::setw(sizeof(type)) << std::setfill('0') << std::hex; \
     printt(type); \
-    std::cout << std::nouppercase
-template<typename ...Args>
-int cpuf_internal_print_fmt(int id, const char* format, int* printed, Args&&... args) {
-    int len;
+    (*printed)++
+#define PRINT_HEX_UPPER(type) \
+    buf << std::setw(sizeof(type)) << std::setfill('0') << std::hex << std::uppercase; \
+    printt(type); \
+    buf << std::nouppercase; \
+    (*printed)++
+
+/**
+ * Internal function to handle format specifiers and print accordingly.
+ * This version writes to a provided `std::stringstream`.
+ */
+template<typename... Args>
+static int cpuf_internal_do_fmt(int id, const char* format, int* printed, std::stringstream& buf, Args&&... args) {
+    int len = 0;
+    // TRY blocks to evaluate format specifiers
     TRY(_char) {
         printt(char);
     }
@@ -222,61 +229,90 @@ int cpuf_internal_print_fmt(int id, const char* format, int* printed, Args&&... 
     TRY_EVAL(str) {
         // string
         print;
-    } else if (isdigit(*format)) {
+    }
+    else if (isdigit(*format)) {
         char* end;
-        long long id = convert_to_num(format, end);
+        long long num = convert_to_num(format, end);
         print;
-        len = end - format;
-    } else if (*format == '$') {
-        // output any type
+        len = static_cast<int>(end - format);
+    }
+    else if (*format == '$') {
+        // Output any type
         len = 1;
         *printed = 1;
         print;
-    } else if (*format == '+') {
+    }
+    else if (*format == '+') {
         len = (*++format == '+') ?
-            out_list(id, format, 1, printed) : out_woffset(id, format, 1, printed);
-    } else if (*format == '-') {
+            out_list(buf, id, format, 1, printed, args...) : out_woffset(buf, id, format, 1, printed, args...);
+    }
+    else if (*format == '-') {
         len = (*++format == '-') ?
-            out_list(id, format, -1, printed) : out_woffset(id, format, -1, printed);
-    } else {
-        return 0; // would output format
+            out_list(buf, id, format, -1, printed, args...) : out_woffset(buf, id, format, -1, printed, args...);
+    }
+    else {
+        return 0; // Unrecognized format specifier
     }
     return len;
 }
+
 #undef TRY
 #undef TRY_EVAL
 #undef PRINT_HEX
-#undef PRINT_HEX_UPPER 
+#undef PRINT_HEX_UPPER
 
+/**
+ * Internal function to handle format specifiers and print accordingly.
+ * This version writes to `std::cout`.
+ */
 template<typename ...Args>
-int cpuf_printf(const char* format,Args&&... args) {
+static int cpuf_internal_print_fmt(int id, const char* format, int* printed, Args&&... args) {
+    int len = 0;
+    // Reuse the existing `cpuf_internal_print_fmt` by passing `std::cout` as the stream
+    // To maintain functionality, we call the `std::stringstream` version and then output it
+    std::stringstream ss;
+    len = cpuf_internal_print_do(id, format, printed, ss, args...);
+    std::cout << ss.str();
+    return len;
+}
+
+/**
+ * `cpuf_printf` writes the formatted output directly to `std::cout`.
+ */
+template<typename ...Args>
+int cpuf_printf(const char* format, Args&&... args) {
     int id = 0;
     const char* start = format;
     while (*format != '\0') {
         if (*format == '%') {
             format++;
             if (*format != '%') {
-                int printed;
-                format += cpuf_internal_print_fmt(id, format, &printed, args...);
+                int printed = 0;
+                int len = cpuf_internal_print_fmt(id, format, &printed, args...);
+                format += len;
                 id += printed;
                 continue;
             }
         }
         std::cout << *format++;
     }
-    return format - start;
+    return static_cast<int>(format - start);
 }
 
+/**
+ * Overloaded `cpuf_printf` that accepts a `std::string` as the format.
+ */
 template<typename ...Args>
-int cpuf_printf(std::string format, Args&&... args) {
+int cpuf_printf(const std::string& format, Args&&... args) {
     int id = 0;
     int i = 0;
-    for (; i < format.size(); ) {
+    while (i < static_cast<int>(format.size())) {
         if (format[i] == '%') {
             i++;
-            if (format[i] != '%') {
-                int printed;
-                i += cpuf_internal_print_fmt(id, format.data(), &printed, args...);
+            if (i < static_cast<int>(format.size()) && format[i] != '%') {
+                int printed = 0;
+                int len = cpuf_internal_print_fmt(id, format.c_str() + i, &printed, args...);
+                i += len;
                 id += printed;
                 continue;
             }
@@ -284,4 +320,52 @@ int cpuf_printf(std::string format, Args&&... args) {
         std::cout << format[i++];
     }
     return i;
+}
+
+/**
+ * `cpuf_sprintf` formats the string and returns it as `std::string`.
+ */
+template<typename ...Args>
+std::string cpuf_sprintf(const char* format, Args&&... args) {
+    int id = 0;
+    const char* start = format;
+    std::stringstream buf;
+    while (*format != '\0') {
+        if (*format == '%') {
+            format++;
+            if (*format != '%') {
+                int printed = 0;
+                int len = cpuf_internal_do_fmt(id, format, &printed, buf, args...);
+                format += len;
+                id += printed;
+                continue;
+            }
+        }
+        buf << *format++;
+    }
+    return buf.str();
+}
+
+/**
+ * Overloaded `cpuf_sprintf` that accepts a `std::string` as the format.
+ */
+template<typename ...Args>
+std::string cpuf_sprintf(const std::string& format, Args&&... args) {
+    int id = 0;
+    int i = 0;
+    std::stringstream buf;
+    while (i < static_cast<int>(format.size())) {
+        if (format[i] == '%') {
+            i++;
+            if (i < static_cast<int>(format.size()) && format[i] != '%') {
+                int printed = 0;
+                int len = cpuf_internal_do_fmt(id, format.c_str() + i, &printed, buf, args...);
+                i += len;
+                id += printed;
+                continue;
+            }
+        }
+        buf << format[i++];
+    }
+    return buf.str();
 }
