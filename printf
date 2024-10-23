@@ -275,12 +275,21 @@ static int cpuf_internal_print_fmt(int id, const char* format, int* printed, Arg
     std::cout << ss.str();
     return len;
 }
-
+static int cpuf_internal_print_fmt_stderr(int id, const char* format, int* printed, Args&&... args) {
+    int len = 0;
+    // Reuse the existing `cpuf_internal_print_fmt` by passing `std::cout` as the stream
+    // To maintain functionality, we call the `std::stringstream` version and then output it
+    std::stringstream ss;
+    len = cpuf_internal_print_do(id, format, printed, ss, args...);
+    std::cout << ss.str();
+    return len;
+}
+namespace cpuf {
 /**
  * `cpuf_printf` writes the formatted output directly to `std::cout`.
  */
 template<typename ...Args>
-int cpuf_printf(const char* format, Args&&... args) {
+int printf(const char* format, Args&&... args) {
     int id = 0;
     const char* start = format;
     while (*format != '\0') {
@@ -303,7 +312,7 @@ int cpuf_printf(const char* format, Args&&... args) {
  * Overloaded `cpuf_printf` that accepts a `std::string` as the format.
  */
 template<typename ...Args>
-int cpuf_printf(const std::string& format, Args&&... args) {
+int printf(const std::string& format, Args&&... args) {
     int id = 0;
     int i = 0;
     while (i < static_cast<int>(format.size())) {
@@ -321,12 +330,30 @@ int cpuf_printf(const std::string& format, Args&&... args) {
     }
     return i;
 }
-
+template<typename ...Args>
+int perror(const std::string& format, Args&&... args) {
+    int id = 0;
+    int i = 0;
+    while (i < static_cast<int>(format.size())) {
+        if (format[i] == '%') {
+            i++;
+            if (i < static_cast<int>(format.size()) && format[i] != '%') {
+                int printed = 0;
+                int len = cpuf_internal_print_fmt_stderr(id, format.c_str() + i, &printed, args...);
+                i += len;
+                id += printed;
+                continue;
+            }
+        }
+        std::cout << format[i++];
+    }
+    return i;
+}
 /**
  * `cpuf_sprintf` formats the string and returns it as `std::string`.
  */
 template<typename ...Args>
-std::string cpuf_sprintf(const char* format, Args&&... args) {
+std::string sprintf(const char* format, Args&&... args) {
     int id = 0;
     const char* start = format;
     std::stringstream buf;
@@ -350,7 +377,7 @@ std::string cpuf_sprintf(const char* format, Args&&... args) {
  * Overloaded `cpuf_sprintf` that accepts a `std::string` as the format.
  */
 template<typename ...Args>
-std::string cpuf_sprintf(const std::string& format, Args&&... args) {
+std::string sprintf(const std::string& format, Args&&... args) {
     int id = 0;
     int i = 0;
     std::stringstream buf;
@@ -369,3 +396,6 @@ std::string cpuf_sprintf(const std::string& format, Args&&... args) {
     }
     return buf.str();
 }
+
+
+} // cpuf
