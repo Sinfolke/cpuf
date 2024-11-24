@@ -260,6 +260,8 @@ static int cpuf_internal_do_fmt(int id, const char* format, int* printed, std::s
 #undef TRY_EVAL
 #undef PRINT_HEX
 #undef PRINT_HEX_UPPER
+#undef printt
+#undef print
 
 /**
  * Internal function to handle format specifiers and print accordingly.
