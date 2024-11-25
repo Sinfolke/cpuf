@@ -277,6 +277,7 @@ static int cpuf_internal_print_fmt(int id, const char* format, int* printed, Arg
     std::cout << ss.str();
     return len;
 }
+template<typename ...Args>
 static int cpuf_internal_print_fmt_stderr(int id, const char* format, int* printed, Args&&... args) {
     int len = 0;
     // Reuse the existing `cpuf_internal_print_fmt` by passing `std::cout` as the stream
