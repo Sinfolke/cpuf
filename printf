@@ -269,22 +269,20 @@ static int cpuf_internal_do_fmt(int id, const char* format, int* printed, std::s
  */
 template<typename ...Args>
 static int cpuf_internal_print_fmt(int id, const char* format, int* printed, Args&&... args) {
-    int len = 0;
     // Reuse the existing `cpuf_internal_print_fmt` by passing `std::cout` as the stream
     // To maintain functionality, we call the `std::stringstream` version and then output it
     std::stringstream ss;
-    len = cpuf_internal_print_do(id, format, printed, ss, args...);
+    int len = cpuf_internal_do_fmt(id, format, printed, ss, args...);
     std::cout << ss.str();
     return len;
 }
 template<typename ...Args>
 static int cpuf_internal_print_fmt_stderr(int id, const char* format, int* printed, Args&&... args) {
-    int len = 0;
     // Reuse the existing `cpuf_internal_print_fmt` by passing `std::cout` as the stream
     // To maintain functionality, we call the `std::stringstream` version and then output it
     std::stringstream ss;
-    len = cpuf_internal_print_do(id, format, printed, ss, args...);
-    std::cout << ss.str();
+    int len = cpuf_internal_do_fmt(id, format, printed, ss, args...);
+    std::cerr << ss.str();
     return len;
 }
 namespace cpuf {
