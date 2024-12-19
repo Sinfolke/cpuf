@@ -174,14 +174,18 @@ public:
      * @return std::string 
      */
     std::string toString() const noexcept {
-        switch (_type) {
-            case Type::Bool: return data.num ? "true" : "false";
-            case Type::Int: return std::to_string(data.num);
-            case Type::Double: return std::to_string(data.fl);
-            case Type::String: return data.str;
-            default: return "Null";
-        }
+        if (_type == Type::Bool)
+            return data.num != 0 ? "true" : "false"; // Ensure explicit comparison for boolean logic
+        else if (_type == Type::Int)
+            return std::to_string(data.num); // Explicitly cast to int
+        else if (_type == Type::Double)
+            return std::to_string(data.fl); // Explicitly cast to double
+        else if (_type == Type::String)
+            return data.str; // Explicitly construct std::string if necessary
+        else
+            return "Null";
     }
+
     /**
      * @brief Construct the std::string class with your value to data. _type is not changed
      * 
@@ -240,68 +244,51 @@ public:
     auto type() const noexcept {
         return _type;
     }
-    template<typename TYPE> auto cast() const -> _LONG_LONG_OR_T<TYPE>::type;
-    template<>
-    auto cast<int>() const -> _LONG_LONG_OR_T<int>::type {
-        #ifdef DEBUG
-        if (_type == Type::Bool)
-            std::cerr << "\nlet::cast<int> throws a warning: the type is bool but you're casting to int" << std::endl;
-        else
-        #endif
-        if (_type != Type::Int) {
-            throw std::runtime_error("let::cast<int> throws an error: your type is not Int");
-        }
-        return data.num;
-    }
-    template<>
-    long long cast<long long>() const {
-        #ifdef DEBUG
-        if (_type == Type::Bool) {
-            std::cerr << "\nlet::cast<long long> throws a warning: the type is bool but you're casting to long long (e.g Int)" << std::endl;
+
+    template<typename TYPE>
+    _LONG_LONG_OR_T<TYPE> cast() const {
+        if (std::is_same<TYPE, int>::value || std::is_same<TYPE, long long>::value) {
+            #ifdef DEBUG
+            if (_type == Type::Bool)
+                std::cerr << "\nlet::cast<int/long long> throws a warning: the type is bool but you're casting to int/long long" << std::endl;
+            else
+            #endif
+            if (_type != Type::Int) {
+                throw std::runtime_error("let::cast<int/long long> throws an error: your type is not Int");
+            }
             return data.num;
-        } else
-        #endif
-        if (_type != Type::Int) {
-            throw std::runtime_error("let::cast<long long> throws an error: your type is not long long (e.g Int)");
-        }
-        return data.num;
-    }
-    template<>
-    bool cast<bool>() const {
-        #ifdef DEBUG
-        if (_type == Type::Int) {
-            std::cerr << "\nlet::cast<bool> throws a warning: the type is int but you're casting to bool" << std::endl;
+        } else if (std::is_same<TYPE, bool>::value) {
+            #ifdef DEBUG
+            if (_type == Type::Int) {
+                std::cerr << "\nlet::cast<bool> throws a warning: the type is int but you're casting to bool" << std::endl;
+                return data.num;
+            } else
+            #endif
+            if (_type != Type::Bool) {
+                throw std::runtime_error("let::cast<bool> throws an error: your type is not Bool");
+            }
             return data.num;
-        } else
-        #endif
-        if (_type != Type::Bool) {
-            throw std::runtime_error("let::cast<bool> throws an error: your type is not Bool");
+        } else if (std::is_same<TYPE, double>::value) {
+            if (_type != Type::Double) {
+                throw std::runtime_error("let::cast<double> throws an error: your type is not Double");
+            }
+            return data.fl;
+        } else if (std::is_same<TYPE, std::string>::value) {
+            if (_type != Type::String) {
+                throw std::runtime_error("let::cast<std::string> throws an error: your type is not String");
+            }
+            return data.str;
+        } else if (is_string<TYPE>::value) {
+            if (_type != Type::String) {
+                throw std::runtime_error("let::cast<const char*> throws an error: your type is not String");
+            }
+            return data.str.c_str();
+        } else {
+            throw std::runtime_error("undefined cast type");
         }
-        return data.num;
-    }
-    template<>
-    double cast<double>() const {
-        if (_type != Type::Double) {
-            throw std::runtime_error("let::cast<double> throws an error: your type is not Double");
-        }
-        return data.fl;
-    }
-    template<>
-    std::string cast<std::string>() const {
-        if (_type != Type::String) {
-            throw std::runtime_error("let::cast<std::string> throws an error: your type is not String");
-        }
-        return data.str;
-    }
-    template<>
-    const char* cast<const char*>() const {
-        if (_type != Type::String) {
-            throw std::runtime_error("let::cast<const char*> throws an error: your type is not String");
-        }
-        return data.str.c_str();
+
     }
     // a simpler way to check for the type
-
     bool isInt() { return _type == Type::Int; }
     bool isBool() { return _type == Type::Bool; }
     bool isDouble() { return _type == Type::Double; }
@@ -395,7 +382,7 @@ public:
     }
     // Assignment operators
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator=(const T& num) {
         unstring();
         if (std::is_same<T, bool>::value)
@@ -407,7 +394,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let&>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let&>::type
     operator=(const T& input) {
         unstring();
         data.fl = static_cast<T>(input);
@@ -415,7 +402,7 @@ public:
         return *this;
     }
     template<typename T>
-    std::enable_if<is_string<T>::value, let&>::type
+    typename std::enable_if<is_string<T>::value, let&>::type
     operator=(const T& str) {
         setString(str);
         return *this;
@@ -436,7 +423,7 @@ public:
 
         // Compound assignment operators
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator+=(const T& other) {
         if (_type == Type::String) {
             data.str += other;
@@ -450,7 +437,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let&>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let&>::type
     operator+=(const T& other) {
         if (_type == Type::String) {
             data.str += other;
@@ -464,7 +451,7 @@ public:
         return *this;
     }
     template<typename T>
-    std::enable_if<is_string<T>::value, let&>::type
+    typename std::enable_if<is_string<T>::value, let&>::type
     operator+=(const let& other) {
         addString(other);
         return *this;
@@ -501,7 +488,7 @@ public:
         return *this;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator-=(const T& other) {
         if (_type >= Type::String) {
             throw unexpected_type_exception("-=", _type.str(), "Int | Bool", "(INT | BOOL | DOUBLE)", _type.str(), 0);
@@ -516,7 +503,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let&>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let&>::type
     operator-=(const T& other) {
         if (_type >= Type::String) {
             throw unexpected_type_exception("-=", _type.str(), "Int | Bool", "(INT | BOOL | DOUBLE)", _type.str(), 0);
@@ -558,7 +545,7 @@ public:
         return *this;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator*=(const T& other) {
         if (_type >= Type::String) {
             throw unexpected_type_exception("*=", "(DOUBLE)", "(let)", "(INT | BOOL | DOUBLE)", "String", 0);
@@ -573,7 +560,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let&>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let&>::type
     operator*=(const T& other) {
         if (_type >= Type::String) {
             throw unexpected_type_exception("*=", "String", "Int | Bool", "[INT | BOOL, DOUBLE]]", "String", 0);
@@ -615,7 +602,7 @@ public:
         return *this;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator/=(const T& other) {
         if (_type >= Type::String) {
             throw unexpected_type_exception("/=", "String", "Int | Bool", "[INT | BOOL, DOUBLE]]", "String", 0);
@@ -630,7 +617,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let&>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let&>::type
     operator/=(const T& other) {
         if (_type >= Type::String) {
             throw unexpected_type_exception("/=", "String", "Double", "[INT | BOOL, DOUBLE]]", "String", 0);
@@ -672,7 +659,7 @@ public:
         return *this;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator%=(const T& other) {
         if (_type >= Type::String) {
             throw unexpected_type_exception("%=", "String", "Int | Bool", "[INT | BOOL, DOUBLE]]", "String", 0);
@@ -687,7 +674,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let&>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let&>::type
     operator%=(const T& other) {
         if (_type >= Type::String) {
             throw unexpected_type_exception("%=", "String", "Int | Bool", "[INT | BOOL, DOUBLE]]", "String", 0);
@@ -728,7 +715,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator>>=(const T& other) {
         if (_type >= Type::Double) {
             throw unexpected_type_exception(">>=", _type.str(), "Int | Bool", "Int | Bool", _type.str(), 0);
@@ -751,7 +738,7 @@ public:
         return *this;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator<<=(const T& other) {
         if (_type >= Type::Double) {
             throw unexpected_type_exception("<<=", _type.str(), "Int | Bool", "Int | Bool", _type.str(), 0);
@@ -774,7 +761,7 @@ public:
         return *this;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator&=(const T& other) {
         if (_type >= Type::Double) {
             throw unexpected_type_exception("&=", _type.str(), "Int | Bool", "Int | Bool", _type.str(), 0);
@@ -799,7 +786,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator|=(const T& other) {
         if (_type >= Type::Double) {
             throw unexpected_type_exception("|=", _type.str(), "Int | Bool", "Int | Bool", _type.str(), 0);
@@ -822,7 +809,7 @@ public:
         return *this;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let&>::type
+    typename std::enable_if<std::is_integral<T>::value, let&>::type
     operator^=(const T& other) {
         if (_type >= Type::Double) {
             throw unexpected_type_exception("^=", _type.str(), "Int | Bool", "Int | Bool", _type.str(), 0);
@@ -846,7 +833,7 @@ public:
     }
         // Compound assignment operators
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator+(let d, const T& other) {
         if (d._type == Type::String) {
             d.data.str += other;
@@ -860,7 +847,7 @@ public:
     }
     
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let>::type
     friend operator+(let d, const T& other) {
         if (d._type == Type::String) {
             d.data.str += other;
@@ -873,7 +860,7 @@ public:
         return d;
     }
     template<typename T>
-    std::enable_if<is_string<T>::value, let>::type
+    typename std::enable_if<is_string<T>::value, let>::type
     friend operator+(let d, const T& other) {
         if (d._type == Type::String) {
             d.data.str += other;
@@ -915,7 +902,7 @@ public:
         return d;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator-(let d, const T& other) {
         if (d._type >= Type::String) {
             throw unexpected_type_exception("-", d._type.str(), other._type.str(), "(INT | BOOL | DOUBLE)", d._type.str(), 0);
@@ -930,7 +917,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let>::type
     friend operator-(let d, const T& other) {
         if (d._type >= Type::String) {
             throw unexpected_type_exception("-", d._type.str(), other._type.str(), "(INT | BOOL | DOUBLE)", d._type.str(), 0);
@@ -976,7 +963,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator*(let d, const T& other) {
         if (d._type >= Type::String) {
             throw unexpected_type_exception("*", d._type.str(), other._type.str(), "(INT | BOOL | DOUBLE)", d._type.str(), 0);
@@ -991,7 +978,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let>::type
     friend operator*(let d, const T& other) {
         if (d._type >= Type::String) {
             throw unexpected_type_exception("*", d._type.str(), other._type.str(), "(INT | BOOL | DOUBLE)", d._type.str(), 0);
@@ -1037,7 +1024,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator/(let d, const T& other) {
         if (d._type >= Type::String) {
             throw unexpected_type_exception("/", d._type.str(), other._type.str(), "(INT | BOOL | DOUBLE)", d._type.str(), 0);
@@ -1052,7 +1039,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let>::type
     friend operator/(let d, const T& other) {
         if (d._type >= Type::String) {
             throw unexpected_type_exception("/", d._type.str(), other._type.str(), "(INT | BOOL | DOUBLE)", d._type.str(), 0);
@@ -1098,7 +1085,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator%(let d, const T& other) {
         if (d._type >= Type::String) {
             throw unexpected_type_exception("%", d._type.str(), other._type.str(), "(INT | BOOL | DOUBLE)", d._type.str(), 0);
@@ -1113,7 +1100,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_floating_point<T>::value, let>::type
+    typename std::enable_if<std::is_floating_point<T>::value, let>::type
     friend operator%(let d, const T& other) {
         if (d._type >= Type::String) {
             throw unexpected_type_exception("%", d._type.str(), other._type.str(), "(INT | BOOL | DOUBLE)", d._type.str(), 0);
@@ -1158,7 +1145,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator>>(let d, const T& other) {
         if (d._type >= Type::Double) {
             throw unexpected_type_exception(">>", d._type.str(), "Int | Bool", "Int | Bool", d._type.str(), 0);
@@ -1180,7 +1167,7 @@ public:
         return d;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator<<(let d, const T& other) {
         if (d._type >= Type::Double) {
             throw unexpected_type_exception("<<", d._type.str(), "Int | Bool", "Int | Bool", d._type.str(), 0);
@@ -1202,7 +1189,7 @@ public:
         return d;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator&(let d, const T& other) {
         if (d._type >= Type::Double) {
             throw unexpected_type_exception("&", d._type.str(), "Int | Bool", "Int | Bool", d._type.str(), 0);
@@ -1225,7 +1212,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator|(let d, const T& other) {
         if (d._type >= Type::Double) {
             throw unexpected_type_exception("|", d._type.str(), "Int | Bool", "Int | Bool", d._type.str(), 0);
@@ -1248,7 +1235,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value, let>::type
+    typename std::enable_if<std::is_integral<T>::value, let>::type
     friend operator^(let d, const T& other) {
         if (d._type >= Type::Double) {
             throw unexpected_type_exception("^", d._type.str(), "Int | Bool", "Int | Bool", d._type.str(), 0);
@@ -1287,7 +1274,7 @@ public:
 
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     operator==(const T& num) {
         if (_type < Type::Double) {
             // int | bool
@@ -1321,7 +1308,7 @@ public:
         } else return false;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     friend operator==(const T& data, const let& num) {
         if (num._type < Type::Double) {
             // int | bool
@@ -1333,7 +1320,7 @@ public:
     // std::enable_if
     // operator!= as operator<;
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     operator!=(const T& num) {
         if (_type < Type::Double) {
             // int | bool
@@ -1367,7 +1354,7 @@ public:
         } else return false;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     friend operator!=(const T& data, const let& num) {
         if (num._type < Type::Double) {
             // int | bool
@@ -1384,7 +1371,7 @@ public:
         else return true; // Null always true
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     operator>(const T& num) {
         if (_type < Type::Double) {
             // int | bool
@@ -1418,7 +1405,7 @@ public:
         } else return false;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     friend operator>(const T& data, const let& num) {
         if (num._type < Type::Double) {
             // int | bool
@@ -1429,7 +1416,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     operator<(const T& num) {
         if (_type < Type::Double) {
             // int | bool
@@ -1463,7 +1450,7 @@ public:
         } else return false;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     friend operator<(const T& data, const let& num) {
         if (num._type < Type::Double) {
             // int | bool
@@ -1474,7 +1461,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     operator>=(const T& num) {
         if (_type < Type::Double) {
             // int | bool
@@ -1508,7 +1495,7 @@ public:
         } else return false;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     friend operator>=(const T& data, const let& num) {
         if (num._type < Type::Double) {
             // int | bool
@@ -1519,7 +1506,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     operator<=(const T& num) {
         if (_type < Type::Double) {
             // int | bool
@@ -1553,7 +1540,7 @@ public:
         } else return false;
     }
     template<typename T>
-    std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
+    typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value || std::is_same<T, char>::value, bool>::type
     friend operator<=(const T& data, const let& num) {
         if (num._type < Type::Double) {
             // int | bool
@@ -1567,25 +1554,19 @@ public:
         #if defined(DEBUG) || defined(CPUF_LET_DEBUG)
         os << "(_type:" << obj._type.str() << ") ";
         #endif
-        switch (obj._type) {
-            case Type::Bool:
-                if (obj.data.num)
-                    os.write("true", 4);
-                else
-                    os.write("false", 5);
-                break;
-            case Type::Int:
-                os << obj.data.num;
-                break;
-            case Type::Double:
-                os << obj.data.fl;
-                break;
-            case Type::String:
-                os << obj.data.str;
-                break;
-            case Type::Null:
-                os << "Null";
-                break;
+        if (obj._type == Type::String) {
+            os << obj.data.str;
+        } else if (obj._type == Type::Int) {
+            os << obj.data.num;
+        } else if (obj._type == Type::Double) {
+            os << obj.data.fl;
+        } else if (obj._type == Type::Bool) {
+            if (obj.data.num)
+                os << "true";
+            else
+                os << "false";
+        } else {
+            os << "Null";
         }
         return os;
     }
@@ -1727,6 +1708,7 @@ public:
         */
     }
 };
+
 namespace std {
 
     template <class _Elem, class _Traits>
