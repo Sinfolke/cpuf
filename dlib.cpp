@@ -1,4 +1,3 @@
-#pragma once
 // definions
 // CPUF_DLIB_NO_EXTENSION
 // CPUF_DLIB_DEFAULT_FLAG x

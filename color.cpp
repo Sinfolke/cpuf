@@ -1,4 +1,3 @@
-#pragma once
 #ifndef CPUF_COLOR
 #define CPUF_COLOR
 #ifndef __cplusplus
