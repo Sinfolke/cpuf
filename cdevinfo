@@ -93,7 +93,7 @@ namespace devinfo {
         constexpr double ARCH = amd64;
         constexpr const char* ARCH_STR = "amd64";
         constexpr double ARCH_BYTESIZE = 8;
-        #if defined(__GNUC__)
+        #if 0//defined(__GNUC__)
             static const int __cpuf_devinfo_amd64_ver__() {
                 if (__builtin_cpu_supports("x86-64-v4"))   return 4;
                 if (__builtin_cpu_supports("x86-64-v3"))   return 3;
