@@ -24,7 +24,7 @@
 #include <memory>
 #include <cctype>
 #include <type_traits>
-#include "color"
+#include "color.h"
 
 #define PRIVATE namespace {
 #define END }
