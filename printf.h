@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <functional>
 #include <vector>
+#include <ostream>  // For std::ostream
+
 namespace ioconfig {
     // standard configurations
     extern const char
@@ -33,36 +35,39 @@ namespace ioconfig {
         *_llong_hexx,
         *_llong_hex_big
     ;
-    extern const char* str;
-    int eval_simple(const char* conf, const char* input);
+    extern const char *str;
+    int eval_simple(const char *conf, const char *input);
 };
+
 // Base case for the case when only one argument is left
-static void print_nth(std::stringstream& buf, int index) {
-    buf << "<none>";
+static void print_nth(std::ostream &out, int index) {
+    out << std::string("<none>");
 }
+
 template<typename T, typename ...Args>
-static void print_nth(std::stringstream& buf, int index, T first, Args&&... args) {
+static void print_nth(std::ostream &out, int index, T first, Args&&... args) {
     if (index == 0) {
-        buf << first;
+        out << first;
     } else {
-        print_nth(buf, index - 1, args...);
+        print_nth(out, index - 1, args...);
     }
 }
 
 // General case for when there are more than one argument
 template<typename Actual>
-static void print_ntht(std::stringstream& buf, int index) {
-    buf << "<none>";
+static void print_ntht(std::ostream& out, int index) {
+    out << std::string("<none>");
 }
 // Primary template for variadic arguments
 template<typename Actual, typename T, typename... Args>
-static void print_ntht(std::stringstream& buf, int index, T first, Args... rest) {
+static void print_ntht(std::ostream& out, int index, T first, Args... rest) {
     if (index == 0) {
-        buf << reinterpret_cast<Actual&>(first);
+        out << reinterpret_cast<Actual&>(first);
     } else {
-        print_ntht<Actual>(buf, index - 1, rest...);
+        print_ntht<Actual>(out, index - 1, rest...);
     }
 }
+
 static long long convert_to_num(const char* start, char* end) {
     long long id = std::strtoll(start, &end, 10);
     #ifdef CPUF_NON_ZERO_COUNT
@@ -70,48 +75,50 @@ static long long convert_to_num(const char* start, char* end) {
     #endif
     return id;
 }
+
 template<typename... Args>
-static int out_list(std::stringstream& buf, int id, const char* start, int iterator, int* printed, Args... args) {
+static int out_list(std::ostream& out, int id, const char* start, int iterator, int* printed, Args... args) {
     char* end;
     *printed = convert_to_num(start, end);
 
-    for (int i = 0; i < *printed; i ++) {
-        print_nth(buf, id + (i * iterator), args...);
+    for (int i = 0; i < *printed; i++) {
+        print_nth(out, id + (i * iterator), args...);
     }
 
     return end - start;
 }
 
 template<typename... Args>
-static int out_woffset(std::stringstream& buf, int id, const char* start, int sign, int* printed, Args... args) {
+static int out_woffset(std::ostream& out, int id, const char* start, int sign, int* printed, Args... args) {
     char* end;
     *printed = convert_to_num(start, end);
 
-    print_nth(buf, id + (*printed * sign), args...);
+    print_nth(out, id + (*printed * sign), args...);
 
     return end - start;
 }
+
 // Macros to simplify the `cpuf_internal_print_fmt` implementation
 #define TRY(var) if ((len = ioconfig::eval_simple(ioconfig::var, format)) != 0)
 #define TRY_EVAL(var) else TRY(var)
-#define printt(type) print_ntht<type>(buf, id, args...); (*printed)++
-#define print print_nth(buf, id, args...); (*printed)++
+#define printt(type) print_ntht<type>(out, id, args...); (*printed)++
+#define print print_nth(out, id, args...); (*printed)++
 #define PRINT_HEX(type) \
-    buf << std::setw(sizeof(type)) << std::setfill('0') << std::hex; \
+    out << std::setw(sizeof(type)) << std::setfill('0') << std::hex; \
     printt(type); \
     (*printed)++
 #define PRINT_HEX_UPPER(type) \
-    buf << std::setw(sizeof(type)) << std::setfill('0') << std::hex << std::uppercase; \
+    out << std::setw(sizeof(type)) << std::setfill('0') << std::hex << std::uppercase; \
     printt(type); \
-    buf << std::nouppercase; \
+    out << std::nouppercase; \
     (*printed)++
 
 /**
  * Internal function to handle format specifiers and print accordingly.
- * This version writes to a provided `std::stringstream`.
+ * This version writes to a provided `std::ostream`.
  */
 template<typename... Args>
-static int cpuf_internal_do_fmt(int id, const char* format, int* printed, std::stringstream& buf, Args&&... args) {
+static int cpuf_internal_do_fmt(int id, const char* format, int* printed, std::ostream& out, Args&&... args) {
     int len = 0;
     // TRY blocks to evaluate format specifiers
     TRY(_char) {
@@ -194,11 +201,11 @@ static int cpuf_internal_do_fmt(int id, const char* format, int* printed, std::s
     }
     else if (*format == '+') {
         len = (*++format == '+') ?
-            out_list(buf, id, format, 1, printed, args...) : out_woffset(buf, id, format, 1, printed, args...);
+            out_list(out, id, format, 1, printed, args...) : out_woffset(out, id, format, 1, printed, args...);
     }
     else if (*format == '-') {
         len = (*++format == '-') ?
-            out_list(buf, id, format, -1, printed, args...) : out_woffset(buf, id, format, -1, printed, args...);
+            out_list(out, id, format, -1, printed, args...) : out_woffset(out, id, format, -1, printed, args...);
     }
     else {
         return 0; // Unrecognized format specifier
@@ -220,21 +227,23 @@ static int cpuf_internal_do_fmt(int id, const char* format, int* printed, std::s
 template<typename ...Args>
 static int cpuf_internal_print_fmt(int id, const char* format, int* printed, Args&&... args) {
     // Reuse the existing `cpuf_internal_print_fmt` by passing `std::cout` as the stream
-    // To maintain functionality, we call the `std::stringstream` version and then output it
-    std::stringstream ss;
-    int len = cpuf_internal_do_fmt(id, format, printed, ss, args...);
-    std::cout << ss.str();
+    // To maintain functionality, we call the `std::ostream` version and then output it
+    std::ostringstream oss;
+    int len = cpuf_internal_do_fmt(id, format, printed, oss, args...);
+    std::cout << oss.str();
     return len;
 }
+
 template<typename ...Args>
 static int cpuf_internal_print_fmt_stderr(int id, const char* format, int* printed, Args&&... args) {
     // Reuse the existing `cpuf_internal_print_fmt` by passing `std::cout` as the stream
-    // To maintain functionality, we call the `std::stringstream` version and then output it
-    std::stringstream ss;
-    int len = cpuf_internal_do_fmt(id, format, printed, ss, args...);
-    std::cerr << ss.str();
+    // To maintain functionality, we call the `std::ostream` version and then output it
+    std::ostringstream oss;
+    int len = cpuf_internal_do_fmt(id, format, printed, oss, args...);
+    std::cerr << oss.str();
     return len;
 }
+
 namespace cpuf {
 /**
  * `cpuf_printf` writes the formatted output directly to `std::cout`.
@@ -281,6 +290,7 @@ int printf(const std::string& format, Args&&... args) {
     }
     return i;
 }
+
 template<typename ...Args>
 int perror(const std::string& format, Args&&... args) {
     int id = 0;

@@ -58,7 +58,7 @@ constexpr const int STRNCMP( char const* lhs, char const* rhs, int n )
 {
     for (int i = 0; i < n; i++) {
         printf("Comparing at %d: %c with %c\n", i, lhs[i], rhs[i]);
-        if (lhs[i] == '\0' or rhs[i] == '\0' or lhs[i] != rhs[i])
+        if (lhs[i] == '\0' || rhs[i] == '\0' || lhs[i] != rhs[i])
             return lhs[i] - rhs[i];
         printf("equal\n");
     }
