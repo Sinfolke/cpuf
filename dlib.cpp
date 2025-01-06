@@ -58,6 +58,9 @@ void dlib::free() {
  * The extension is added based on the platform an app is compiled for.
  * You may disable automatic extension by defining CPUF_DLIB_NO_EXTENSION
  */
+inline void dlib::loadlib(const const char* path) {
+    loadlib(std::string(path));
+}
 inline void dlib::loadlib(const std::string path) {
     if (handler) free();
 #   ifdef _WIN32
@@ -79,23 +82,7 @@ inline void dlib::loadlib(const std::string path) {
  * You may disable automatic extension by defining CPUF_DLIB_NO_EXTENSION
 */
 void dlib::loadlib(const char* path) {
-    if (handler) free();
-    std::string _path;
-#   ifdef _WIN32
-    _path += ".dll";
-    handler = LoadLibraryA(_path.c_str());
-#   else
-#     ifdef __APPLE__
-    _path += ".dylib";
-#     else
-    _path += ".so";
-#     endif
-    handler = dlopen(_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
-#   endif
-    if (handler == nullptr) {
-        std::string m = "cannot open '" + _path + "'";
-        throw std::dlib_exception(m, std::dlib_exception::Kind::loadlib);
-    }
+    loadlib(std::string(path));
 }
 void dlib::loadlib(std::string path) {
 #ifdef _WIN32
@@ -110,9 +97,10 @@ void dlib::loadlib(std::string path) {
     handler = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
 #endif
     if (handler == nullptr) {
-        std::string m = "cannot open '" + path + "'";
-        throw std::dlib_exception(m, std::dlib_exception::Kind::loadlib);
+        std::string error_message = "cannot open '" + path + "', error: " + dlerror();
+        throw std::dlib_exception(error_message, std::dlib_exception::Kind::loadlib);
     }
+
 }
 #endif
 /**
