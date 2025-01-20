@@ -9,6 +9,28 @@
 #  include <dlfcn.h>
 # endif
 #include "dlib.h"
+static std::string getLastError() {
+#ifdef _WIN32
+    DWORD errorCode = GetLastError();
+    if (errorCode == 0) {
+        return "";
+    }
+
+    LPSTR messageBuffer = nullptr;
+    FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr, errorCode, 0, (LPSTR)&messageBuffer, 0, nullptr
+    );
+
+    std::string errorMsg = messageBuffer ? std::string(messageBuffer) : "";
+    LocalFree(messageBuffer);
+
+    return errorMsg;
+#else
+    char* errorMsg = dlerror();
+    return errorMsg ? std::string(errorMsg) : "";
+#endif
+}
 namespace std {
     /**
      * @brief The default flag for the dlib class when the program is compiled for unix systems. On Windows all interaction ignored.
@@ -69,8 +91,11 @@ inline void dlib::loadlib(const std::string path) {
     handler = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
 #   endif
     if (handler == nullptr) {
-        std::string m = "cannot open '" + path + "'";
-        throw std::dlib_err(m, std::dlib_err::Kind::loadlib);
+        std::string error_message = "cannot open '";
+                    error_message += path;
+                    error_message += "', error: ";
+                    error_message += getLastError();
+        throw std::dlib_err(error_message, std::dlib_err::Kind::loadlib);
     }
 }
 #else
@@ -97,7 +122,10 @@ void dlib::loadlib(std::string path) {
     handler = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
 #endif
     if (handler == nullptr) {
-        std::string error_message = "cannot open '" + path + "', error: " + dlerror();
+        std::string error_message = "cannot open '";
+                    error_message += path;
+                    error_message += "', error: ";
+                    error_message += getLastError();
         throw std::dlib_exception(error_message, std::dlib_exception::Kind::loadlib);
     }
 
