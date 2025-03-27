@@ -9,7 +9,7 @@
 #include <functional>
 #include <vector>
 #include <ostream>  // For std::ostream
-
+#include "operator.h"
 namespace ioconfig {
     // standard configurations
     extern const char
