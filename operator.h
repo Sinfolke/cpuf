@@ -1,5 +1,4 @@
 #pragma once
-
 #include <iostream>
 #include <vector>
 #include <list>
@@ -13,6 +12,9 @@
 #include <stack>
 #include <queue>
 #include <span>
+namespace cpuf::op {
+        extern bool addType;
+}
 #if __cplusplus >= 202302L // C++26
     #include <vector>  // std::inplace_vector
     //#include <hive>
@@ -21,9 +23,11 @@
 // Generic template for range-based containers
 template <typename Container>
 std::ostream& printContainer(std::ostream& os, const Container& container, const char* name) {
-    os << name << " { ";
+    if (cpuf::op::addType)
+        os << name << " ";
+    os << "{ ";
     for (const auto& elem : container) {
-        os << elem << " ";
+        os << elem << ' ';
     }
     os << "}";
     return os;
@@ -31,7 +35,9 @@ std::ostream& printContainer(std::ostream& os, const Container& container, const
 // Overload for key-value containers (map, multimap)
 template <typename Container>
 std::ostream& printKeyValueContainer(std::ostream& os, const Container& container, const char* name) {
-    os << name << " { ";
+    if (cpuf::op::addType)
+        os << name << ' ';
+    os << "{ ";
     for (const auto& [key, value] : container) {
         os << "(" << key << ": " << value << ") ";
     }
