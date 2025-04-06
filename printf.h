@@ -9,7 +9,7 @@
 #include <functional>
 #include <vector>
 #include <ostream>  // For std::ostream
-
+#include "operator.h"
 namespace ioconfig {
     // standard configurations
     extern const char
@@ -197,7 +197,6 @@ static int cpuf_internal_do_fmt(int id, const char* format, int* printed, std::o
     else if (*format == '$') {
         // Output any type
         len = 1;
-        *printed = 1;
         print;
     }
     else if (*format == '+') {
