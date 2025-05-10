@@ -1785,3 +1785,5 @@ namespace std {
 using std::getline;
 Type::Type(const let& data) : _t(data.type()) {}
 #endif // CPUF_LET
+#undef PRIVATE
+#undef END
