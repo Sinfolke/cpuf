@@ -1,20 +1,20 @@
-#pragma once
 // definions
 // CPUF_DLIB_NO_EXTENSION
 // CPUF_DLIB_DEFAULT_FLAG x
-# include <stdexcept>
-# include <string>
+module;
 # ifdef _WIN32
 #  include <Windows.h>
 # else
 #  include <dlfcn.h>
 # endif
-namespace std {
-    /**
-     * @brief The default flag for the dlib class when the program is compiled for unix systems. On Windows all interaction ignored.
-     *        Default state is RTLD_LAZY
-     */
-    extern int dlibDefFlags; 
+export module cpuf.dlib;
+import std;
+extern int dlibDefFlags;
+/**
+ * @brief A cross-platform class for dynamic library loading. 
+ */
+export class dlib {
+    public:
     class dlib_exception : public std::exception {
     public:
         enum class Kind {
@@ -31,12 +31,6 @@ namespace std {
     private:
         std::string m;
     };
-}
-/**
- * @brief A cross-platform class for dynamic library loading. 
- */
-class dlib {
-    public:
     /**
      * @brief Construct the object and load dynamic library
      *
@@ -74,21 +68,21 @@ class dlib {
      * @brief Sets the flag to value you specify
      * @param flag Flag you specify. Use | operator if need multiple
      */
-    inline void setFlag(const int& flag);
+    void setFlag(const int& flag);
     /**
      * @brief Adds flag you specify 
      * @param flag Flag you specify. Use | operator if need multiple
      */
-    inline void addFlag(const int& flag);
+    void addFlag(const int& flag);
     /**
      * @brief Remove flag you specify 
      * @param flag Flag to remove
      */
-    inline void removeFlag(const int& flag);
+   void removeFlag(const int& flag);
     /**
      * @brief Set flags to its default state (std::dlibDefFlags)
     */
-    inline void clearFlags();
+    void clearFlags();
     /**
      * @brief Load function from currently loaded library
      * 
@@ -111,7 +105,7 @@ class dlib {
             std::string n = "cannot load function '";
             n += name;
             n+= "'";
-            throw std::dlib_exception(n, std::dlib_exception::Kind::loadfun);
+            throw dlib::dlib_exception(n, dlib::dlib_exception::Kind::loadfun);
         }
         return p;
     }
@@ -128,7 +122,7 @@ class dlib {
             free();
             name.insert(0, "cannot load function '");
             name += "'";
-            throw std::dlib_exception(name, std::dlib_exception::Kind::loadfun);
+            throw dlib::dlib_exception(name, dlib::dlib_exception::Kind::loadfun);
         }
         return p;
     }
@@ -153,7 +147,7 @@ class dlib {
             free();
             name.insert(0, "cannot load '");
             name += "'";
-            throw std::dlib_exception(name, std::dlib_exception::Kind::load);
+            throw dlib::dlib_exception(name, dlib::dlib_exception::Kind::load);
         }
         return p;
     }

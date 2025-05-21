@@ -1,16 +1,5 @@
-#pragma once
-#ifndef CPUF_COLOR
-#define CPUF_COLOR
-#ifndef __cplusplus
-#error "cpuf/color is C++ header"
-#endif
-
-#include <memory>
-#include <cstring>
-#include <cstdlib>
-#include <cstdio>
-#include <sstream>
-#include <iomanip>
+export module cpuf.color;
+import std;
 /**
  * @brief ASCII color constants for console. Also supports RBG and HEX colors.
  * By default there are in scope foreiground constants, means they will change text color.
@@ -22,7 +11,7 @@
  *  out_of_range: the color either has 0 or over 6 digits
  * @file color
 */
-namespace color {
+export namespace color {
     struct RGB { 
         unsigned char R, G, B;
         bool operator==(const RGB& _rgb);
@@ -37,7 +26,6 @@ namespace color {
     };
     /** @brief Resets both foreiground and background to it's default state */
     constexpr const char* resetAll = "\033[0m";
-    static inline std::string __rgb(const RGB& _rgb, const int& _ground);
     std::string rgb(const RGB& _rgb);
     std::string rgb(const unsigned char R, const unsigned char G, const unsigned char B);
     std::string hex(const std::string hex);
@@ -50,21 +38,21 @@ namespace color {
     }
 }
 #define ADD_COLOR(name, value)                                  \
-    namespace color {                                           \
+    export namespace color {                                           \
         constexpr const char* name = "\033[3" #value "m";       \
         namespace bg {                                          \
             constexpr const char* name = "\033[4" #value "m";   \
         }                                                       \
     }
 #define ADD_COLOR_CST(name, value)                              \
-    namespace color {                                           \
+    export namespace color {                                           \
         constexpr const char* name = "\033[3" value "m";        \
         namespace bg {                                          \
             constexpr const char* name = "\033[4" value "m";    \
         }                                                       \
     }
 #define ADD_COLOR_BRIGHT(name, value)                           \
-    namespace color {                                           \
+    export namespace color {                                           \
         constexpr const char* name = "\033[9" #value "m";       \
         namespace bg {                                          \
             constexpr const char* name = "\033[10" #value "m";  \
@@ -94,5 +82,3 @@ ADD_COLOR_BRIGHT(bright_white, 7);
 #undef ADD_COLOR
 #undef ADD_COLOR_CST
 #undef ADD_COLOR_BRIGHT
-
-#endif // CPUF_COLOR

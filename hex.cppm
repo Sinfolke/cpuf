@@ -1,11 +1,7 @@
-#include <string>
-#pragma once
+export module cpuf.hex;
+import std;
 
-#ifndef __cplusplus
-#error "This header is only for C++"
-#endif
-
-namespace hex {
+export namespace hex {
     long long to_decimal(std::string hex);
     std::string to_binary(std::string hex);
     std::string to_binary(long long num);

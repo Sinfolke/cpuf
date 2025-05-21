@@ -1,14 +1,14 @@
 // definions
 // CPUF_DLIB_NO_EXTENSION
 // CPUF_DLIB_DEFAULT_FLAG x
-# include <stdexcept>
-# include <string>
+module;
 # ifdef _WIN32
 #  include <Windows.h>
 # else
 #  include <dlfcn.h>
 # endif
-#include "dlib.h"
+module cpuf.dlib;
+import std;
 static std::string getLastError() {
 #ifdef _WIN32
     DWORD errorCode = GetLastError();
@@ -31,25 +31,23 @@ static std::string getLastError() {
     return errorMsg ? std::string(errorMsg) : "";
 #endif
 }
-namespace std {
-    /**
-     * @brief The default flag for the dlib class when the program is compiled for unix systems. On Windows all interaction ignored.
-     *        Default state is RTLD_LAZY
-     */
-    int dlibDefFlags = 0; 
-    dlib_exception::dlib_exception(const char*& e, Kind k) {
-        kind = k;
-        m += e;
-    }
+/**
+ * @brief The default flag for the dlib class when the program is compiled for unix systems. On Windows all interaction ignored.
+ *        Default state is RTLD_LAZY
+ */
+int dlibDefFlags = 0;
+dlib::dlib_exception::dlib_exception(const char*& e, Kind k) {
+    kind = k;
+    m += e;
+}
 
-    dlib_exception::dlib_exception(const std::string& e, Kind k) {
-        kind = k;
-        m += e;
-    }
+dlib::dlib_exception::dlib_exception(const std::string& e, Kind k) {
+    kind = k;
+    m += e;
+}
 
-    const char* dlib_exception::what() const noexcept {
-        return m.c_str();
-    }
+const char* dlib::dlib_exception::what() const noexcept {
+    return m.c_str();
 }
 dlib::dlib(const char* path) {
     loadlib(path);
@@ -126,7 +124,7 @@ void dlib::loadlib(std::string path) {
                     error_message += path;
                     error_message += "', error: ";
                     error_message += getLastError();
-        throw std::dlib_exception(error_message, std::dlib_exception::Kind::loadlib);
+        throw dlib::dlib_exception(error_message, dlib::dlib_exception::Kind::loadlib);
     }
 
 }
@@ -163,7 +161,7 @@ inline void dlib::removeFlag(const int& flag) {
 */
 inline void dlib::clearFlags() {
 #ifndef _WIN32
-    f = std::dlibDefFlags;
+    f = dlibDefFlags;
 #endif
 }
 #undef CPUF_DLIB_NO_EXTENSION

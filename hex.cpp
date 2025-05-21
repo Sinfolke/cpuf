@@ -1,13 +1,6 @@
-#include <string>
-#include <vector>
-#include <iostream>
-#include <stdexcept>
-#include <cctype>
-#include <algorithm>
-#ifndef __cplusplus
-#error "This header is only for C++"
-#endif
-
+module cpuf.hex;
+import std;
+import std.compat;
 namespace hex {
     static const char* bintable[] = {
         "0000", "0001", "0010", // 1 2 3
