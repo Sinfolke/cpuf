@@ -97,15 +97,35 @@ namespace cpuf {
     int vprintf_impl(std::ostream& out, const std::string& format, Args&&... args) {
         return vprintf_impl(out, format.c_str(), std::forward<Args>(args)...);
     }
-
-    // Public printf writes to std::cout
     export template <typename... Args>
     int printf(const char* format, Args&&... args) {
-        return vprintf_impl(std::cout, format, std::forward<Args>(args)...);
+        auto r = vprintf_impl(std::cout, format, std::forward<Args>(args)...);
+#ifndef DEBUG
+        std::cout << std::endl;
+#else
+        std::cout << '\n';
+#endif
+        return r;
     }
 
     export template <typename... Args>
     int printf(const std::string& format, Args&&... args) {
+        auto r = vprintf_impl(std::cout, format, std::forward<Args>(args)...);
+#ifndef DEBUG
+        std::cout << std::endl;
+#else
+        std::cout << '\n';
+#endif
+        return r;
+    }
+    // Public printf writes to std::cout
+    export template <typename... Args>
+    int dprintf(const char* format, Args&&... args) {
+        return vprintf_impl(std::cout, format, std::forward<Args>(args)...);
+    }
+
+    export template <typename... Args>
+    int dprintf(const std::string& format, Args&&... args) {
         return vprintf_impl(std::cout, format, std::forward<Args>(args)...);
     }
 
