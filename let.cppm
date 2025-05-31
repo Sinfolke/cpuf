@@ -3,9 +3,6 @@ import cpuf.color;
 import std;
 import std.compat;
 
-#define PRIVATE namespace {
-#define END }
-PRIVATE
 /**
  * @brief Checks whether the given type is a string type
  * 
@@ -71,14 +68,9 @@ template<>
 struct _LONG_LONG_OR_T<long> {
     using type = long long;
 };
-#ifdef CPUF_LET_PUBLICNULL
-END
-    struct __Null {};
-#else
-    struct __Null {};
-END
-#endif
-__Null Null;
+struct __Null {};
+export __Null Null;
+export class let;
 class Type {
 public:
     enum type {
@@ -87,7 +79,7 @@ public:
 
     Type(type t = type::Null) : _t(t) {}
 
-    Type(const class let& data);
+    Type(const let& data);
 
     operator type() const {
         return _t;
