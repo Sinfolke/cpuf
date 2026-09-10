@@ -39,6 +39,12 @@ std::ostream& operator<<(std::ostream& os, const std::tuple<Ts...>& tup) {
     os << ')';
     return os;
 }
+export template<typename ...VariantTypes>
+requires(sizeof...(VariantTypes) > 0)
+std::ostream& operator<<(std::ostream& os, const std::variant<VariantTypes...>& v) {
+    std::visit([&os](auto&& arg) { os << arg; }, v);
+    return os;
+}
 // Stream non-printable ranges
 export template <typename T>
 auto operator<<(std::ostream& os, const T& range)
