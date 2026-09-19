@@ -23,44 +23,75 @@ template <typename T>
 concept Range = requires(T t) {
     t.begin(); t.end();
 };
+namespace std {
+    // --- Forward Declarations for Two-Phase Lookup ---
+    export template <typename A, typename B>
+    std::ostream& operator<<(std::ostream& os, const std::pair<A, B>& p);
 
+    export template <typename A>
+    std::ostream& operator<<(std::ostream& os, const std::optional<A>& p);
 
-// Stream pairs
-export template<typename A, typename B>
-std::ostream& operator<<(std::ostream& os, const std::pair<A, B>& p) {
-    os << '(' << p.first << ", " << p.second << ')';
-    return os;
-}
-// Operator<< for tuples
-export template <typename... Ts>
-std::ostream& operator<<(std::ostream& os, const std::tuple<Ts...>& tup) {
-    os << '(';
-    print_tuple_impl(os, tup, std::index_sequence_for<Ts...>{});
-    os << ')';
-    return os;
-}
-export template<typename ...VariantTypes>
-requires(sizeof...(VariantTypes) > 0)
-std::ostream& operator<<(std::ostream& os, const std::variant<VariantTypes...>& v) {
-    std::visit([&os](auto&& arg) { os << arg; }, v);
-    return os;
-}
-// Stream non-printable ranges
-export template <typename T>
-auto operator<<(std::ostream& os, const T& range)
-    -> std::enable_if_t<
-           Range<T> &&
-           !is_streamable_v<T>,
-           std::ostream&
-       >
-{
-    // Implementation for printing range of non-streamable elements
-    os << "[";
-    for (auto it = range.begin(); it != range.end(); ++it) {
-        if (it != range.begin())
-            os << ", ";
-        os << *it; // This will only compile if *it is streamable.
+    export template <typename... Ts>
+    std::ostream& operator<<(std::ostream& os, const std::tuple<Ts...>& tup);
+
+    export template <typename ...VariantTypes>
+    requires(sizeof...(VariantTypes) > 0)
+    std::ostream& operator<<(std::ostream& os, const std::variant<VariantTypes...>& v);
+
+    export template <typename T>
+    auto operator<<(std::ostream& os, const T& range)
+        -> std::enable_if_t<
+               Range<T> && !is_streamable_v<T>,
+               std::ostream&
+           >;
+
+    // Stream pairs
+    export template<typename A, typename B>
+    std::ostream& operator<<(std::ostream& os, const std::pair<A, B>& p) {
+        os << '(' << p.first << ", " << p.second << ')';
+        return os;
     }
-    os << "]";
-    return os;
+    // Stream optional values
+    export template<typename A>
+    std::ostream& operator<<(std::ostream& os, const std::optional<A>& opt) {
+        if (opt) {
+            os << '(' << *opt << ')';
+        } else {
+            os << "(nullopt)";
+        }
+        return os;
+    }
+    // Operator<< for tuples
+    export template <typename... Ts>
+    std::ostream& operator<<(std::ostream& os, const std::tuple<Ts...>& tup) {
+        os << '(';
+        print_tuple_impl(os, tup, std::index_sequence_for<Ts...>{});
+        os << ')';
+        return os;
+    }
+    export template<typename ...VariantTypes>
+    requires(sizeof...(VariantTypes) > 0)
+    std::ostream& operator<<(std::ostream& os, const std::variant<VariantTypes...>& v) {
+        std::visit([&os](auto&& arg) { os << arg; }, v);
+        return os;
+    }
+    // Stream non-printable ranges
+    export template <typename T>
+    auto operator<<(std::ostream& os, const T& range)
+        -> std::enable_if_t<
+               Range<T> &&
+               !is_streamable_v<T>,
+               std::ostream&
+           >
+    {
+        // Implementation for printing range of non-streamable elements
+        os << "[";
+        for (auto it = range.begin(); it != range.end(); ++it) {
+            if (it != range.begin())
+                os << ", ";
+            os << *it; // This will only compile if *it is streamable.
+        }
+        os << "]";
+        return os;
+    }
 }
